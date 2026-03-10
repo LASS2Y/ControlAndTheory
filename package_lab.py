@@ -33,8 +33,10 @@ def LL_RT(MV,Kp,Tlag,Tlead,Ts,PV,PVInit=0,method='EBD'):
                 PV.append((1/(1+K))*PV[-1] + (K*Kp/(1+K)) * ((1+(Tlead/(Ts)))*MV[-1] - (Tlead/(Ts))*MV[-2]))
             elif method == 'EFD':
                 PV.append((1-K)*PV[-1] + K*Kp*((Tlead/(Ts)) * MV[-1] + (1 - Tlead/(Ts))*MV[-2]))
-            #elif method == 'TRAP':
-                #PV.append((1/(2*T+Ts))*((2*T-Ts)*PV[-1] + Kp*Ts*(MV[-1] + MV[-2])))            
+            elif method == 'TRAP':
+                a = 2*Tlead/Ts
+                b = 2*Tlag/Ts
+                PV.append(Kp*((a+1)/(b+1))*MV[-1] + Kp*MV[-2]*((1-a)/(b+1)) - PV[-1]*((1-b)/(b+1)))            
             else:
                 PV.append((1/(1+K))*PV[-1] + (K*Kp/(1+K)) * ((1+(Tlead/(Ts)))*MV[-1] - (Tlead/(Ts))*MV[-2]))
     else:
