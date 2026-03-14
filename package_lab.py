@@ -152,7 +152,13 @@ def PID_RT(SP, PV, Man, MVMan, MVFF, Kc, Ti, Td, alpha, Ts, MVmin, MVmax, MV, MV
     # Ajout sur MV
     MV.append(MVP[-1] + MVI[-1] + MVD[-1] + MVFF[-1])
     
-    
+class PID :
+    def __init__(self, parameters) :
+        self.parameters = {}
+        self.parameters["Kc"] = parameters.get("Kc", 0.0)
+        self.parameters["Ti"] = parameters.get("Ti", 1.0)
+        self.parameters["Td"] = parameters.get("Td", 0.0)
+        self.parameters["Kfd"] = parameters.get("Tfd", 0.0)
 
 def IMCTuning(Kp, Tlag1, Tlag2, theta, gamma, process="SOPDT"):
         """
