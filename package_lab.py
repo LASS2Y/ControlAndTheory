@@ -1,4 +1,5 @@
 import numpy as np
+import os
 
 import matplotlib.pyplot as plt
 from IPython.display import display, clear_output
@@ -77,3 +78,89 @@ def IMCTuning(Kp, Tlag1, Tlag2, theta, gamma, process="SOPDT"):
             Ti = Tlag1
             Td = 0
         return (Kc, Ti, Td)
+
+
+def Margin(Ps,C,omega,Show=True):
+    """
+    Calcule la marge de gain et la marge de phase. Elles nous permettent d'analyser la robustesse du PID.
+    :Ps : Process
+    :C: Fonction de transfert du Contrôleur 
+    :omega : vecteur de la fréquence 
+    :show : autorise l'affichage graphique
+
+    """
+    # Initialisation des paramètres
+    s = 1j*omega
+    Kc = C.parameters['Kc']
+    Ti = C.parameters['Ti']
+    Td = C.parameters['Td']
+    Tfd = C.parameters['Tfd']
+    
+    # Calcul du Controller 
+    Cs = Kc*(1 + 1/(Ti*s)+ (Td*s)/(Tfd*s +1))
+    
+    # Loop gain L(s) = P(s)C(s)
+    Ls =Cs*Ps 
+
+    # Plot de L(s)
+    if Show ==True:
+        fig, (ax_freq, ax_time) = plt.subplots(2,1)
+        fig.set_figheight(12)
+        fig.set_figwidth(22)
+
+        # Amplitude
+        ax_freq.semilogx(omega,20*np.log10(np.abs(Ls)),label='L(s)')
+        gain_min = np.min(20*np.log10(np.abs(Ls)/5))
+        gain_max = np.max(20*np.log10(np.abs(Ls)*5))
+        ax_freq.set_xlim([np.min(omega), np.max(omega)])
+        ax_freq.set_ylim([gain_min, gain_max])
+        ax_freq.set_ylabel('Amplitude |P| [db]')
+        ax_freq.set_title('Bode plot of P')
+        ax_freq.legend(loc='best')
+            
+        # Phase
+        ax_time.semilogx(omega, (180/np.pi)*np.unwrap(np.angle(Ls)),label='L(s)')
+        ax_time.set_xlim([np.min(omega), np.max(omega)])
+        ph_min = np.min((180/np.pi)*np.unwrap(np.angle(Ps))) - 10
+        ph_max = np.max((180/np.pi)*np.unwrap(np.angle(Ps))) + 10
+        ax_time.set_ylim([np.max([ph_min, -200]), ph_max])
+        ax_time.set_ylabel(r'Phase $\angle P$ [°]')
+        ax_time.legend(loc='best')
+        ax_freq.axhline(y=0,color='black')
+        ax_time.axhline(y=-180,color='black')
+
+    # Crossover frequency
+    i = 0
+    for value in Ls:   # slide 69
+        i+=1
+        dB = 20*np.log10(np.abs(value))
+        if dB < 0.05 and dB > -0.05:
+            OmegaC =  omega[i-1]
+            PhaseC = np.angle(value,deg=True)
+            break        
+
+    # Ultimate Frequency
+    n = 0
+    for value in Ls:
+        n+=1
+        deg = np.angle(value,deg=True)
+        if deg < -179.5 and deg > -180.5:
+            OmegaU = omega[n-1]
+            u_freq = 20*np.log10(np.abs(value))
+            break
+    
+    # Affichage graphique
+    if Show ==True:
+        ax_freq.plot([OmegaU,OmegaU],[0,u_freq]) 
+        ax_time.plot([OmegaC,OmegaC],[PhaseC,-180])
+    print('Gain margin :',-1*u_freq,'dB at the ultimate frequency :',OmegaU,'rad/s')
+    print('Phase margin : ',PhaseC +180,'° at the crossover frequency :',OmegaC,'rad/s')
+    
+    # Save picture
+    nameFile = 'Plots/Gain_phase_margin'
+
+    if not os.path.exists('Plots'):
+        os.makedirs('Plots')
+
+    #plt.savefig(nameFile + '.png',transparent=True)
+    #plt.savefig(nameFile + '.pdf',transparent=True)  
