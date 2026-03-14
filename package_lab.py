@@ -43,6 +43,117 @@ def LL_RT(MV,Kp,Tlag,Tlead,Ts,PV,PVInit=0,method='EBD'):
     else:
         PV.append(Kp*MV[-1])
 
+# PID functions
+
+def Proportional_action(MVP, Kc, E, method):
+    """
+    Action proportionnel du PID
+    MVP
+    """
+    if len(MVP)==0:
+        MVP.append((Kc*E[-1]))
+    else:
+        if method == 'EBD-EBD':
+            MVP.append(Kc*E[-1])
+        elif method == 'TRAP-TRAP':  
+            MVP.append(Kc*E[-1])        
+        else: # meme méthode
+            MVP.append(Kc*E[-1])
+    return MVP
+
+def Intergral_action(MVI, Kc, Ts, Ti, E, method):
+    """
+    Action intégrale du PID
+    MVI
+    """
+    # MV[k] is MV[-1] and MV[k-1] is MV[-2]
+    if len(MVI)==0:
+        MVI.append(((Kc*Ts)/Ti)*(E[-1]))
+    else:
+        if method == 'EBD-EBD':
+            MVI.append(MVI[-1] + ((Kc*Ts)/Ti)*(E[-1]))
+        elif method == 'TRAP-TRAP':
+            MVI.append(MVI[-1] + ((Kc*Ts)/(2*Ti))*(E[-1] + E[-2]))        
+        else: # EBD
+            MVI.append(MVI[-1] + ((Kc*Ts)/Ti)*(E[-1]))
+    return MVI
+
+def Derivative_action(MVD,Tfd, Ts, Kc, Td, E, method):
+    """
+    Action derivative du PID
+    MVD
+    """
+    if len(MVD)==0:
+        MVD.append(((Kc*Td)/(Tfd+Ts))*(E[-1]))
+    else:
+        if method == 'EBD-EBD':
+            MVD.append((Tfd/(Tfd+Ts))*MVD[-1] + ((Kc*Td)/(Tfd+Ts))*(E[-1] - E[-2])) 
+        elif method =='TRAP-TRAP':
+            MVD.append((((Tfd-(Ts/2))/(Tfd+(Ts/2)))*MVD[-1] + ((Kc*Td)/(Tfd+(Ts/2)))*(E[-1] - E[-2])))     
+        else:  # EBD
+            MVD.append((Tfd/(Tfd+Ts))*MVD[-1] + ((Kc*Td)/(Tfd+Ts))*(E[-1] - E[-2]))
+    return MVD
+
+def PID_RT(SP, PV, Man, MVMan, MVFF, Kc, Ti, Td, alpha, Ts, MVmin, MVmax, MV, MVP, MVI, MVD, E, ManFF=False, PVinit=0, method="EBD-EBD"):
+    """
+    SP = setpoint vector
+    PV = process value vector
+    Man = manual controller mode vector : bool
+    MVMan = Manual value for MV vector
+    MVFF = feedforward vector
+    Kc = controller gain
+    Ti= integral time constant
+    Td = derivative time constant
+    alpha = Tfd = alpha*Td = where Tfd is derivative filter time constant
+
+    MVMin = min value for MV
+    MVMax = max value for MV
+
+    MV = Maniplated value vector
+    MVP = proportional part of MV vector
+    MVI =  integral part of MV vector
+    MVD = derivative part of MV vector
+    E = control error vector
+
+    ManFF = activated FF in manuel mode
+    PVInit = initial value of PV
+    Method : discreditisation value for PV
+        EBD-EBD: Euler Backward difference
+        TRAP-TRAP: Trapezoïdal method
+
+    The function PID_RT appends new values to the vector MV, MVP, MVI, MVD based on PID algorithm, controller mode and FF
+    """
+
+    # Initialisation 
+    Tfd = alpha*Td
+    if len(PV) == 0:
+        E.append(SP[-1] - PVinit)
+    else: 
+        E.append(SP[-1] - PV[-1])
+    
+    # Calcul des 3 parties
+    MVP = Proportional_action(MVP, Kc, E, method="EBD-EBD")
+    MVI = Intergral_action(MVI, Kc, Ts, Ti, E, method="EBD-EBD")
+    MVD = Derivative_action(MVD,Tfd, Ts, Kc, Td, E, method="EBD-EBD")
+
+    # Mode manuel + anti-wind up (integrator help)
+    if Man[-1] == True:
+        if ManFF:
+            MVI[-1] = MVMan[-1] - MVP[-1] - MVD[-1] 
+        else:
+            MVI[-1] = MVMan[-1] - MVP[-1] - MVD[-1] - MVFF[-1]
+            
+    # Saturation
+    if (MVP[-1] + MVI[-1] + MVD[-1] + MVFF[-1]) > MVmax:
+        MVI[-1] = MVmax - MVP[-1] - MVD[-1] - MVFF[-1]
+    elif (MVP[-1] + MVI[-1] + MVD[-1] + MVFF[-1]) < MVmin:
+        MVI[-1] = MVmin - MVP[-1] - MVD[-1] - MVFF[-1]
+
+    # Ajout sur MV
+    MV.append(MVP[-1] + MVI[-1] + MVD[-1] + MVFF[-1])
+    
+    
+
 def IMCTuning(Kp, Tlag1, Tlag2, theta, gamma, process="SOPDT"):
         """
         IMCTuning computes the IMC PID tuning parameters for FOPDT and SOPDT processes.
