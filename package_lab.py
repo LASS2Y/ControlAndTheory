@@ -132,25 +132,26 @@ def PID_RT(SP, PV, Man, MVMan, MVFF, Kc, Ti, Td, alpha, Ts, MVmin, MVmax, MV, MV
         E.append(SP[-1] - PV[-1])
     
     # Calcul des 3 parties
-    MVP = Proportional_action(MVP, Kc, E, method="EBD-EBD")
-    MVI = Intergral_action(MVI, Kc, Ts, Ti, E, method="EBD-EBD")
-    MVD = Derivative_action(MVD,Tfd, Ts, Kc, Td, E, method="EBD-EBD")
+    MVP = Proportional_action(MVP, Kc, E, method=method)
+    MVI = Intergral_action(MVI, Kc, Ts, Ti, E, method=method)
+    MVD = Derivative_action(MVD, Tfd, Ts, Kc, Td, E, method=method)
 
-    # Mode manuel + anti-wind up (integrator help)
+    # Mode manuel + anti-wind up
     if Man[-1] == True:
         if ManFF:
             MVI[-1] = MVMan[-1] - MVP[-1] - MVD[-1] 
         else:
             MVI[-1] = MVMan[-1] - MVP[-1] - MVD[-1] - MVFF[-1]
             
-    # Saturation
+    # Saturation — toujours cohérente avec le calcul final de MV
     if (MVP[-1] + MVI[-1] + MVD[-1] + MVFF[-1]) > MVmax:
         MVI[-1] = MVmax - MVP[-1] - MVD[-1] - MVFF[-1]
     elif (MVP[-1] + MVI[-1] + MVD[-1] + MVFF[-1]) < MVmin:
         MVI[-1] = MVmin - MVP[-1] - MVD[-1] - MVFF[-1]
 
-    # Ajout sur MV
+    # Calcul final de MV
     MV.append(MVP[-1] + MVI[-1] + MVD[-1] + MVFF[-1])
+
     
 class PID :
     def __init__(self, parameters) :
