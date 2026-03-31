@@ -7,22 +7,22 @@ from IPython.display import display, clear_output
 def LL_RT(MV,Kp,Tlag,Tlead,Ts,PV,PVInit=0,method='EBD'):
     
     """
-    The function "FO_RT" needs to be included in a "for or while loop".
-    
-    :MV: input vector
-    :Kp: process gain
-    :T: lag time constant [s]
-    :Ts: sampling period [s]
-    :PV: output vector
-    :PVInit: (optional: default value is 0)
-    :method: discretisation method (optional: default value is 'EBD')
+    The function "LL_RT" needs to be included in a "for or while loop".
+    :param MV: input vector
+    :param Kp: process gain
+    :param T1: lead time constant (positive value) [s]
+    :param T2: lag time constant (positive value) [s]
+    :param Ts: sampling period [s]
+    :param PV: output vector
+    :param PVInit: (optional: default value is 0)
+    :param method: discretisation method (optional: default value is 'EBD')
         EBD: Euler Backward difference
         EFD: Euler Forward difference
         TRAP: Trapezoïdal method
-    
-    The function "FO_RT" appends a value to the output vector "PV".
-    The appended value is obtained from a recurrent equation that depends on the discretisation method.
-    """    
+    The function "LL_RT" appends a value to the output vector "PV".
+    The appended value is obtained from a recurrent equation that considers
+    both lead and lag time constants.
+    """
     
     if (Tlag != 0):
         K = Ts/Tlag
