@@ -159,7 +159,7 @@ class PID :
         self.parameters["Kc"] = parameters.get("Kc", 0.0)
         self.parameters["Ti"] = parameters.get("Ti", 1.0)
         self.parameters["Td"] = parameters.get("Td", 0.0)
-        self.parameters["Kfd"] = parameters.get("Tfd", 0.0)
+        self.parameters["Tfd"] = parameters.get("Tfd", 0.0)
 
 def IMCTuning(Kp, Tlag1, Tlag2, theta, gamma, process="SOPDT"):
         """
